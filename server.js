@@ -11,16 +11,10 @@ import productRouter from "./src/routes/productRoutes.js";
 import categoryRouter from "./src/routes/categoryRoute.js";
 // import cloudnaryConfig from "./src/config/cloudnaryConfig.js/index.js";
 import orderRouter from "./src/routes/orderRoutes.js";
-
-
 import imageRouter from "./src/routes/imageRoute.js";
-
-import orderRouter from "./src/routes/orderRoutes.js";
-
-
+// import orderRouter from "./src/routes/orderRoutes.js";
 import reviewRouter from "./src/routes/reviewRoutes.js";
 import couponRouter from "./src/routes/couponRoutes.js";
-
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -30,12 +24,9 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
 
-<<<<<<< HEAD
-=======
 // cloudnary cinfiguration
 // cloudnaryConfig();
 
->>>>>>> 5160dcdff5d3a911cb00832c7b5d275e53cb09ba
 // get the current directory name
 const __dirname = path.resolve();
 

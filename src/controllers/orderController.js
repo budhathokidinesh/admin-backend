@@ -1,13 +1,9 @@
 import nodeMailer from "../config/nodeMailer.js";
 import Order from "../models/Order/orderSchema.js";
-<<<<<<< HEAD
 import nodemailer from "nodemailer";
-=======
 import User from "../models//User/userSchema.js";
 import Product from "../models/Product/productSchema.js";
-
 import responseClient from "../utility/responseClient.js";
->>>>>>> 5160dcdff5d3a911cb00832c7b5d275e53cb09ba
 
 //changing order status
 export const orderStatusController = async (req, res) => {
@@ -53,22 +49,10 @@ export const orderStatusController = async (req, res) => {
 export const fetchAllOrdersAdmin = async (req, res) => {
   try {
     const orders = await Order.find()
-<<<<<<< HEAD
-      .populate({
-        path: "items.productId",
-        select: "title thumbnail price",
-        model: "Product",
-      })
-      .populate({
-        path: "buyer",
-        select: "name email phone",
-        model: "User",
-        options: { strictPopulate: false },
-      })
-=======
+
       .populate("items.productId", "title thumbnail")
       .populate("buyer", "fName lName email phone")
->>>>>>> 5160dcdff5d3a911cb00832c7b5d275e53cb09ba
+
       .sort({ createdAt: -1 })
       .lean();
 
@@ -93,7 +77,6 @@ export const fetchAllOrdersAdmin = async (req, res) => {
   }
 };
 
-<<<<<<< HEAD
 //This is for add or update the order note
 export const addOrUpdateOrderNote = async (req, res) => {
   const { orderId } = req.params;
@@ -243,7 +226,9 @@ export const sendOrderNoteEmail = async (req, res) => {
       message: "Failed to send email",
       error: error.message,
     });
-=======
+  }
+};
+
 export const getDashboardData = async (req, res) => {
   try {
     // Sales Data by Month
@@ -401,6 +386,5 @@ export const getTopProducts = async (req, res, next) => {
     });
   } catch (error) {
     next(error);
->>>>>>> 5160dcdff5d3a911cb00832c7b5d275e53cb09ba
   }
 };
