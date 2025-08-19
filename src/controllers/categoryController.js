@@ -1,20 +1,24 @@
 import slugify from "slugify";
-
 import {
   addNewCategory,
+  deleteCategoryById,
   getAllCategory,
+  getCategoriesByParentId,
   getCategoryById,
   updateCategory,
   updateChildrenCategories,
 } from "../models/Category/categoryModel.js";
 import responseClient from "../utility/responseClient.js";
 import { getCategoryPath } from "../utility/categoryPath.js";
-import { updateProductsCategoryPath } from "../models/Product/productModel.js";
+import {
+  getProductsByCategoryId,
+  updateProductsCategoryPath,
+} from "../models/Product/productModel.js";
 import buildCategoryTree from "../utility/buildCategoryTree.js";
+
 export const createNewCategory = async (req, res, next) => {
   try {
     const category = req.body;
-
 
     const { path, level } = await getCategoryPath({
       name: category.name,
@@ -30,9 +34,7 @@ export const createNewCategory = async (req, res, next) => {
     const cat = await addNewCategory(obj);
 
     cat?._id
-
       ? responseClient({ req, res, message: "New Category Added Sucessfully" })
-
       : responseClient({
           req,
           res,
@@ -49,8 +51,6 @@ export const createNewCategory = async (req, res, next) => {
 export const getAllCategories = async (req, res, next) => {
   try {
     const categories = await getAllCategory();
-
-
 
     if (categories.length && Array.isArray(categories)) {
       const nestedCategories = buildCategoryTree(categories);
@@ -71,87 +71,188 @@ export const getAllCategories = async (req, res, next) => {
   }
 };
 
+// export const updateCategoryController = async (req, res, next) => {
+//   try {
+//     // step 1 get data from req.body
+//     const { _id, name } = req.body;
+
+//     // step 2 fetch csategry by id from db
+//     const category = await getCategoryById(_id);
+
+//     if (category?._id) {
+//       const { parent } = category;
+//       const oldPath = category.path;
+
+//       const newslug = slugify(name, { lower: true });
+//       const { path } = await getCategoryPath({
+//         name: name,
+//         parentId: parent === "" ? null : parent,
+//       });
+//       // update category
+
+//       const updateObj = { name, path, slug: newslug };
+//       const updatedCategory = await updateCategory({ _id }, updateObj);
+//       if (updatedCategory?._id) {
+//         // update the children
+//         const updatedChildrens = await updateChildrenCategories(oldPath, path);
+//         if (updatedChildrens?.modifiedCount > 0) {
+//           const updatedProdtcsWithCategoryPath =
+//             await updateProductsCategoryPath(oldPath, path);
+
+//           if (updatedProdtcsWithCategoryPath?.modifiedCount > 0) {
+//             return responseClient({
+//               message: "updated the category successfully",
+//               res,
+//             });
+//           } else {
+//             responseClient({
+//               message: `categrory has been updated but there is no product under this categry`,
+//               res,
+//             });
+//           }
+//         }
+//       }
+//     }
+//     return responseClient({
+//       res,
+//       message: "something went wrong could not update category",
+//       statusCode: 400,
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
+// delete category
 export const updateCategoryController = async (req, res, next) => {
   try {
-    // step 1 get data from req.body
-    const { _id, name } = req.body;
+    // Step 1: Get ID from params, name from body
+    const { id } = req.params;
+    const { name } = req.body;
 
-    // step 2 fetch csategry by id from db
-    const category = await getCategoryById(_id);
-
-    if (category?._id) {
-      const { parent } = category;
-      const oldPath = category.path;
-
-      const newslug = slugify(name, { lower: true });
-      const { path } = await getCategoryPath({
-        name: name,
-        parentId: parent === "" ? null : parent,
+    if (!id || !name) {
+      return responseClient({
+        res,
+        statusCode: 400,
+        message: "Category ID and name are required",
       });
-      // update category
+    }
 
-      const updateObj = { name, path, slug: newslug };
-      const updatedCategory = await updateCategory({ _id }, updateObj);
-      if (updatedCategory?._id) {
-        // update the children
-        const updatedChildrens = await updateChildrenCategories(oldPath, path);
-        if (updatedChildrens?.modifiedCount > 0) {
-          const updatedProdtcsWithCategoryPath =
-            await updateProductsCategoryPath(oldPath, path);
+    // Step 2: Fetch category by ID
+    const category = await getCategoryById(id);
 
-          if (updatedProdtcsWithCategoryPath?.modifiedCount > 0) {
-            return responseClient({
-              message: "updated the category successfully",
-              res,
-            });
-          } else {
-            responseClient({
-              message: `categrory has been updated but there is no product under this categry`,
-              res,
-            });
-          }
-        }
+    if (!category) {
+      return responseClient({
+        res,
+        statusCode: 404,
+        message: "Category not found",
+      });
+    }
+
+    const oldPath = category.path;
+    const parent = category.parent || null;
+
+    // Step 3: Generate new slug and path
+    const newSlug = slugify(name, { lower: true });
+    const { path } = await getCategoryPath({
+      name,
+      parentId: parent === "" ? null : parent,
+    });
+
+    // Step 4: Update category
+    const updateObj = { name, path, slug: newSlug };
+    const updatedCategory = await updateCategory(id, updateObj);
+
+    if (!updatedCategory) {
+      return responseClient({
+        res,
+        statusCode: 400,
+        message: "Failed to update category",
+      });
+    }
+
+    // Step 5: Update children categories paths
+    const updatedChildren = await updateChildrenCategories(oldPath, path);
+
+    if (updatedChildren?.modifiedCount > 0) {
+      // Step 6: Update products' category paths
+      const updatedProducts = await updateProductsCategoryPath(oldPath, path);
+
+      if (updatedProducts?.modifiedCount > 0) {
+        return responseClient({
+          res,
+          message: "Updated category and products successfully",
+        });
+      } else {
+        return responseClient({
+          res,
+          message:
+            "Category updated, but no products found under this category",
+        });
       }
     }
+
+    // If no children updated, still send success
     return responseClient({
       res,
-      message: "something went wrong could not update category",
-      statusCode: 400,
+      message: "Category updated successfully (no child categories affected)",
     });
   } catch (error) {
     next(error);
   }
 };
 
-// delete category
 export const deleteCategory = async (req, res) => {
-  const { _id } = req.params;
+  const { id } = req.params;
+
   try {
-    //Find the categories whose parent field equals the current category’s _id
-    const childCategories = await Category.find({ parent: _id });
-    //If a category has children, deletion of category should not be done.
-    if (childCategories.length > 0) {
-      return res
-        .status(400)
-        .json({ message: "Cannot delete a category which has sub-categories" });
+    // Check for child categories
+    const childCategories = await getCategoriesByParentId(id);
+
+    const hasChildren = childCategories.length > 0;
+
+    if (hasChildren) {
+      return responseClient({
+        res,
+        statusCode: 400,
+        message:
+          " delete sub categories first inside this category before deleting this category",
+      });
     }
 
-    //If a category has products, it should not be deleted.
-    const products = await Product.find({ categoryId: _id });
+    // Check if category is associated with products
+    const products = await getProductsByCategoryId({ categoryId: id });
+
     if (products.length > 0) {
-      return res
-        .status(400)
-        .json({ message: "Cannot delete a category which has products" });
+      return responseClient({
+        res,
+        statusCode: 400,
+        message: "Cannot delete a category which has products",
+      });
     }
 
-    const deletedCategory = await Category.findByIdAndDelete(_id);
+    // Delete category using model function
+    const deletedCategory = await deleteCategoryById(id);
+
     if (!deletedCategory) {
-      return res.status(404).json({ message: "Could not find category" });
+      return responseClient({
+        res,
+        statusCode: 404,
+        message: "Could not find category",
+      });
     }
-    return res.status(200).json(deletedCategory);
+
+    return responseClient({
+      res,
+      statusCode: 200,
+      message: "Category deleted successfully",
+    });
   } catch (error) {
-    return res
-      .staus(500)
-      .json({ message: "Server Error", error: error.message });
+    return responseClient({
+      res,
+      statusCode: 500,
+      message: "Server Error",
+      error: error.message,
+    });
   }
 };

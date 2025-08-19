@@ -15,6 +15,14 @@ export const authMiddleware = async (req, res, next) => {
     // validate if accessJWT is valid
     const decoded = verifyAccessJWT(authorization);
 
+    if (!decoded?.email) {
+      return responseClient({
+        res,
+        message: "Invalid token, unauthorized",
+        statusCode: 401,
+      });
+    }
+
     // Check if  session valid token exists
     if (decoded?.email) {
       const sessionToken = await getSession({
@@ -39,6 +47,12 @@ export const authMiddleware = async (req, res, next) => {
           req.userInfo = user;
 
           return next();
+        } else {
+          return responseClient({
+            res,
+            message: "Unauthorized, not an admin",
+            statusCode: 403,
+          });
         }
       }
     }
@@ -53,8 +67,17 @@ export const authMiddleware = async (req, res, next) => {
 export const refreshAuth = async (req, res) => {
   try {
     const { authorization } = req.headers;
+
     // validate and decode refresh token
     const decoded = verifyRefreshJWT(authorization);
+
+    if (!decoded?.email) {
+      return responseClient({
+        res,
+        message: "Invalid token, unauthorized",
+        statusCode: 401,
+      });
+    }
 
     // get the user based on email and generate new access token for the user
     if (decoded?.email) {

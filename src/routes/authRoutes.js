@@ -13,7 +13,6 @@ import {
 import {
   registerUserValidtion,
   loginValidation,
-
 } from "../validators/schemas/validationSchema.js";
 
 import { authMiddleware, refreshAuth } from "../middlewares/authMiddleware.js";
@@ -21,13 +20,18 @@ import { authMiddleware, refreshAuth } from "../middlewares/authMiddleware.js";
 export const authRouter = express.Router();
 
 // register new user route
-authRouter.post("/register", registerUserValidtion, registerNewUser);
+authRouter.post(
+  "/register",
+  registerUserValidtion,
+  authMiddleware,
+  registerNewUser
+);
 
 //update a userdetails
-authRouter.patch("/update/:userId", updateUserDetails);
+authRouter.patch("/update/:userId", authMiddleware, updateUserDetails);
 
 //delete a user
-authRouter.delete("/delete/:userId", deleteUser);
+authRouter.delete("/delete/:userId", authMiddleware, deleteUser);
 
 //login user
 authRouter.post("/login", loginValidation, loginUser);
@@ -36,8 +40,7 @@ authRouter.post("/login", loginValidation, loginUser);
 authRouter.get("/user-info", authMiddleware, getUser);
 
 // get all the user
-authRouter.get("/all-users", getAllUsers);
-
+authRouter.get("/all-users", authMiddleware, getAllUsers);
 
 // GET NEW ACCESS TOKEN | GET | PRIVATE ROUTE
 authRouter.get("/accessjwt", refreshAuth);
@@ -49,4 +52,4 @@ authRouter.post("/forget-password", forgetPassword);
 authRouter.patch("/change-password", changePassword);
 
 //logout
-authRouter.post("/logout", logout);
+authRouter.post("/logout", authMiddleware, logout);

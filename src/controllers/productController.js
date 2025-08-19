@@ -12,8 +12,6 @@ import { getCategoryById } from "../models/Category/categoryModel.js";
 // add prodcut controller statrt here
 export const addProductController = async (req, res, next) => {
   try {
-    console.log(req.body);
-
     const slug = slugify(req.body.title, { lower: true });
     const category = await getCategoryById(req.body.categoryId);
     if (!category?._id) {
@@ -138,7 +136,6 @@ export const deleteProductsController = async (req, res, next) => {
     // call model
     const id = req.params.id;
     const deletedProductByIds = await deleteProducts([id]);
-
 
     if (deletedProductByIds.deletedCount >= 1) {
       return responseClient({

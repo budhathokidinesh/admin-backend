@@ -7,13 +7,22 @@ import {
   updateProductsController,
   deleteProductsController,
 } from "../controllers/productController.js";
+import { authMiddleware } from "../middlewares/authMiddleware.js";
 const productRouter = express.Router();
 
-productRouter.post("/addProduct", addProductController);
-productRouter.get("/:categoryId", getProductsByCategoryIdController);
-productRouter.get("/Id/:_id", getProductByIdController);
-productRouter.get("/", getAllProductsController);
-productRouter.patch("/:_id", updateProductsController);
-productRouter.delete("/deleteProducts/:id", deleteProductsController);
+productRouter.post("/addProduct", authMiddleware, addProductController);
+productRouter.get(
+  "/:categoryId",
+  authMiddleware,
+  getProductsByCategoryIdController
+);
+productRouter.get("/Id/:_id", authMiddleware, getProductByIdController);
+productRouter.get("/", authMiddleware, getAllProductsController);
+productRouter.patch("/:_id", authMiddleware, updateProductsController);
+productRouter.delete(
+  "/deleteProducts/:id",
+  authMiddleware,
+  deleteProductsController
+);
 
 export default productRouter;
